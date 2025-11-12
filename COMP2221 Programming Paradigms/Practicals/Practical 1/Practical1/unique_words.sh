@@ -1,0 +1,1 @@
+cat 1342.txt.utf-8.txt | tr "\n" " " | tr -cd '[:print:]' | tr -cd 'A-Za-z ' | tr ' ' '\n' | tr 'A-Z' 'a-z' | sort | uniq > dictionary.txt

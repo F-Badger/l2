@@ -1,0 +1,12 @@
+2025-10-12 14:25:10 [INFO] System startup completed
+2025-10-12 14:25:15 [INFO] Network interfaces initialized
+2025-10-12 14:26:20 [WARNING] CPU temperature high: 75°C
+2025-10-12 14:27:33 [ERROR] Failed to mount /dev/sdb1
+2025-10-12 14:28:45 [INFO] Service firewall started
+2025-10-12 14:29:12 [WARNING] Memory usage above threshold: 82%
+2025-10-12 14:30:25 [INFO] User session started: admin
+2025-10-12 14:31:40 [ERROR] Network timeout on interface eth0
+2025-10-12 14:32:55 [INFO] Cron job executed: /usr/bin/backup.sh
+2025-10-12 14:33:18 [WARNING] Disk I/O wait time increased
+2025-10-12 14:34:30 [INFO] Security scan completed
+2025-10-12 14:35:45 [ERROR] Service apache2 failed to restart

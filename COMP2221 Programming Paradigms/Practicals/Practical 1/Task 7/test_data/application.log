@@ -1,0 +1,12 @@
+2025-10-12 14:30:25 [INFO] Application server started successfully
+2025-10-12 14:30:26 [INFO] Loading configuration from /etc/app/config.conf
+2025-10-12 14:30:27 [INFO] Database connection established
+2025-10-12 14:30:28 [INFO] Cache service initialized
+2025-10-12 14:31:15 [WARNING] High memory usage detected: 78%
+2025-10-12 14:32:45 [ERROR] Failed to connect to external API: timeout
+2025-10-12 14:33:12 [INFO] User authentication successful: user123
+2025-10-12 14:34:20 [WARNING] Slow database query detected: 2.3s
+2025-10-12 14:35:33 [INFO] Scheduled backup completed
+2025-10-12 14:36:45 [ERROR] Disk space running low: 85% full
+2025-10-12 14:37:12 [INFO] Cache cleared successfully
+2025-10-12 14:38:22 [WARNING] Rate limit exceeded for IP: 192.168.1.100

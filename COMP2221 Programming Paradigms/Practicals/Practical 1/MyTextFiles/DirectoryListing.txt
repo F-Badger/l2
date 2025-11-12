@@ -1,0 +1,14 @@
+1342.txt.utf-8.txt
+COMP2221 Practical 01 - The Unix Admin - v2.pdf.pdf
+DirectoryListing.txt
+Practical 1.ipynb
+Task 7
+check_number.sh
+count_chars.sh
+dictionary.txt
+example.TXT
+img1.png
+img2.png
+legacy_inventory.dat
+text_files.sh
+unique_words.sh
