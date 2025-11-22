@@ -1,0 +1,24 @@
+CC = gcc
+
+# Final program name
+TARGET = program
+
+all: $(TARGET)
+
+$(TARGET): main.o reader.o
+	echo "Building $(TARGET)"
+	$(CC) $^ -o $@
+
+reader.o: reader.c reader.h
+	echo "Building reader.o"
+	$(CC) -c $<
+
+main.o: main.c reader.h
+	echo "Building main.o"
+	$(CC) -c $<
+
+clean:
+	echo "cleaning"
+	rm -f *.o $(TARGET)
+
+
