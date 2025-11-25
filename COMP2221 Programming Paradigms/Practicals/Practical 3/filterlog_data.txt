@@ -1,0 +1,15 @@
+[00:00:01] SYSTEM: Boot sequence initiated
+[00:00:02] CHECK: Power nominal, battery at 98%
+[00:00:04] SENSOR: GPS lock acquired (5 satellites)
+[00:00:05] STATUS: All systems nominal
+[00:00:12] WARN: Wheel encoder jitter detected on channel A
+[00:00:14] INFO: Telemetry uplink stable (link quality 92%)
+[00:00:25] SENSOR: Temperature 41.7 C
+[00:00:31] ERROR: IMU data timeout
+[00:00:32] ERROR: Motor controller not responding
+[00:00:34] WARN: Failsafe mode engaged, attempting recovery
+[00:00:41] INFO: Motor controller restored
+[00:00:55] STATUS: Nominal operations resumed
+[00:01:10] SENSOR: Temperature 39.8 C
+[00:01:30] INFO: Data packet transmission complete
+

@@ -1,0 +1,2 @@
+[00:00:31] ERROR: IMU data timeout
+[00:00:32] ERROR: Motor controller not responding
