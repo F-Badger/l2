@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Three.js Spinning Cube - Better Lighting</title>
+    <style>
+      body { margin: 0; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from 'three';
+
+      // ==========================================
+      // PART 1: SCENE SETUP
+      // ==========================================
+      const scene = new THREE.Scene();
+      
+      // Add a background color (dark gray) instead of default black
+      scene.background = new THREE.Color(0x222222);
+
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+      // Enable Antialiasing for smoother edges
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // ==========================================
+      // NEW PART: LIGHTING
+      // ==========================================
+      
+      // 1. Ambient Light: Soft, global illumination so shadows aren't pitch black
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Color, Intensity
+      scene.add(ambientLight);
+
+      // 2. Directional Light: Strong light source (like the sun) to create 3D definition
+      const dirLight = new THREE.DirectionalLight(0xffffff, 2); 
+      dirLight.position.set(5, 5, 5); // Position it up and to the right
+      scene.add(dirLight);
+
+      // ==========================================
+      // PART 2: MODELING
+      // ==========================================
+      
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+
+      // Use MeshStandardMaterial instead of MeshBasicMaterial
+      // This material reacts to the lights
+      const material = new THREE.MeshStandardMaterial({ 
+        color: 0x00ff00,    // Green
+        roughness: 0.2,     // 0.0 is smooth (shiny), 1.0 is rough (matte)
+        metalness: 0.3      // 0.0 is plastic, 1.0 is metallic
+      });
+
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+
+      camera.position.z = 5;
+
+      // ==========================================
+      // PART 3: ANIMATION loop
+      // ==========================================
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Rotate the cube
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Native WebGL Spinning Cube</title>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <canvas id="glcanvas"></canvas>
+
+    <script>
+      // ==========================================
+      // PART 1: SCENE SETUP & BOILERPLATE
+      // ==========================================
+      const canvas = document.getElementById('glcanvas');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      const gl = canvas.getContext('webgl');
+
+      if (!gl) {
+        alert('Unable to initialize WebGL.');
+      }
+
+      gl.clearColor(0.133, 0.133, 0.133, 1.0);
+      gl.enable(gl.DEPTH_TEST);
+
+      // ==========================================
+      // PART 2: SHADERS
+      // ==========================================
+      
+      const vsSource = `
+        attribute vec4 aVertexPosition;
+        attribute vec3 aVertexNormal;
+
+        uniform mat4 uModelMatrix;
+        uniform mat4 uViewMatrix;
+        uniform mat4 uProjectionMatrix;
+        uniform mat4 uNormalMatrix; 
+
+        varying highp vec3 vLighting;
+
+        void main(void) {
+          gl_Position = uProjectionMatrix * uViewMatrix * uModelMatrix * aVertexPosition;
+
+          highp vec3 ambientLight = vec3(0.6, 0.6, 0.6); 
+          highp vec3 directionalLightColor = vec3(1.0, 1.0, 1.0); 
+          highp vec3 directionalVector = normalize(vec3(5.0, 5.0, 5.0)); 
+
+          highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+          highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+
+          vLighting = ambientLight + (directionalLightColor * directional * 2.0);
+        }
+      `;
+
+      const fsSource = `
+        varying highp vec3 vLighting;
+
+        void main(void) {
+          highp vec4 greenColor = vec4(0.0, 1.0, 0.0, 1.0);
+          gl_FragColor = vec4(greenColor.rgb * vLighting, greenColor.a);
+        }
+      `;
+
+      const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+      
+      const programInfo = {
+        program: shaderProgram,
+        attribLocations: {
+          vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+          vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
+        },
+        uniformLocations: {
+          projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
+          modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
+          viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
+          normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
+        },
+      };
+
+      // ==========================================
+      // PART 3: MODELING
+      // ==========================================
+      
+      const positions = [
+        // Front face
+        -0.5, -0.5,  0.5,   0.5, -0.5,  0.5,   0.5,  0.5,  0.5,  -0.5,  0.5,  0.5,
+        // Back face
+        -0.5, -0.5, -0.5,  -0.5,  0.5, -0.5,   0.5,  0.5, -0.5,   0.5, -0.5, -0.5,
+        // Top face
+        -0.5,  0.5, -0.5,  -0.5,  0.5,  0.5,   0.5,  0.5,  0.5,   0.5,  0.5, -0.5,
+        // Bottom face
+        -0.5, -0.5, -0.5,   0.5, -0.5, -0.5,   0.5, -0.5,  0.5,  -0.5, -0.5,  0.5,
+        // Right face
+         0.5, -0.5, -0.5,   0.5,  0.5, -0.5,   0.5,  0.5,  0.5,   0.5, -0.5,  0.5,
+        // Left face
+        -0.5, -0.5, -0.5,  -0.5, -0.5,  0.5,  -0.5,  0.5,  0.5,  -0.5,  0.5, -0.5,
+      ];
+
+      const vertexNormals = [
+        // Front
+         0.0,  0.0,  1.0,   0.0,  0.0,  1.0,   0.0,  0.0,  1.0,   0.0,  0.0,  1.0,
+        // Back
+         0.0,  0.0, -1.0,   0.0,  0.0, -1.0,   0.0,  0.0, -1.0,   0.0,  0.0, -1.0,
+        // Top
+         0.0,  1.0,  0.0,   0.0,  1.0,  0.0,   0.0,  1.0,  0.0,   0.0,  1.0,  0.0,
+        // Bottom
+         0.0, -1.0,  0.0,   0.0, -1.0,  0.0,   0.0, -1.0,  0.0,   0.0, -1.0,  0.0,
+        // Right
+         1.0,  0.0,  0.0,   1.0,  0.0,  0.0,   1.0,  0.0,  0.0,   1.0,  0.0,  0.0,
+        // Left
+        -1.0,  0.0,  0.0,  -1.0,  0.0,  0.0,  -1.0,  0.0,  0.0,  -1.0,  0.0,  0.0,
+      ];
+
+      const indices = [
+        0,  1,  2,      0,  2,  3,    // front
+        4,  5,  6,      4,  6,  7,    // back
+        8,  9,  10,     8,  10, 11,   // top
+        12, 13, 14,     12, 14, 15,   // bottom
+        16, 17, 18,     16, 18, 19,   // right
+        20, 21, 22,     20, 22, 23,   // left
+      ];
+
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+      const normalBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+
+      const indexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+      // ==========================================
+      // PART 4: ANIMATION
+      // ==========================================
+      
+      let cubeRotation = 0.0;
+
+      function render() {
+        cubeRotation += 0.01;
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const fieldOfView = 45 * Math.PI / 180; // Tweaked FOV to 45 for standard look
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        const zNear = 0.1;
+        const zFar = 1000.0;
+        const projectionMatrix = mat4_perspective(fieldOfView, aspect, zNear, zFar);
+
+        const viewMatrix = mat4_create();
+        mat4_translate(viewMatrix, viewMatrix, [0.0, 0.0, -5.0]);
+
+        const modelMatrix = mat4_create();
+        mat4_rotate(modelMatrix, modelMatrix, cubeRotation, [0, 1, 0]); 
+        mat4_rotate(modelMatrix, modelMatrix, cubeRotation, [1, 0, 0]); 
+
+        const normalMatrix = mat4_create(); 
+        Object.assign(normalMatrix, modelMatrix);
+
+        gl.useProgram(programInfo.program);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+        gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.modelMatrix, false, modelMatrix);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.viewMatrix, false, viewMatrix);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
+
+        gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+
+      // ==========================================
+      // UTILITIES
+      // ==========================================
+
+      function initShaderProgram(gl, vsSource, fsSource) {
+        const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+        const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+        const shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertexShader);
+        gl.attachShader(shaderProgram, fragmentShader);
+        gl.linkProgram(shaderProgram);
+        return shaderProgram;
+      }
+
+      function loadShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error(gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      function mat4_create() {
+        return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+      }
+
+      function mat4_translate(out, a, v) {
+        let x = v[0], y = v[1], z = v[2];
+        let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+        let a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15];
+
+        out[12] = a00*x + a10*y + a20*z + a30;
+        out[13] = a01*x + a11*y + a21*z + a31;
+        out[14] = a02*x + a12*y + a22*z + a32;
+        out[15] = a03*x + a13*y + a23*z + a33;
+      }
+
+      function mat4_perspective(fovy, aspect, near, far) {
+        let f = 1.0 / Math.tan(fovy / 2), nf = 1 / (near - far);
+        let out = new Float32Array(16);
+        out[0] = f / aspect;
+        out[5] = f;
+        out[10] = (far + near) * nf;
+        out[11] = -1;
+        out[14] = (2 * far * near) * nf;
+        return out;
+      }
+
+      // ROTATION FUNCTION
+      function mat4_rotate(out, a, rad, axis) {
+        let x = axis[0], y = axis[1], z = axis[2];
+        let len = Math.sqrt(x*x + y*y + z*z);
+        x /= len; y /= len; z /= len;
+        let s = Math.sin(rad), c = Math.cos(rad), t = 1 - c;
+        let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
+        let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
+        let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
+        let b00 = x*x*t+c, b01 = y*x*t+z*s, b02 = z*x*t-y*s;
+        let b10 = x*y*t-z*s, b11 = y*y*t+c, b12 = z*y*t+x*s;
+        let b20 = x*z*t+y*s, b21 = y*z*t-x*s, b22 = z*z*t+c;
+        
+        // Row 1
+        out[0] = a00*b00 + a10*b01 + a20*b02;
+        out[1] = a01*b00 + a11*b01 + a21*b02;
+        out[2] = a02*b00 + a12*b01 + a22*b02;
+        
+        // Row 2
+        out[4] = a00*b10 + a10*b11 + a20*b12;
+        out[5] = a01*b10 + a11*b11 + a21*b12;
+        out[6] = a02*b10 + a12*b11 + a22*b12;
+        
+        // Row 3
+        out[8] = a00*b20 + a10*b21 + a20*b22;
+        out[9] = a01*b20 + a11*b21 + a21*b22;
+        out[10] = a02*b20 + a12*b21 + a22*b22;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Beginner Three.js: Simple Village</title>
+    <style>
+        /* Basic reset to make the canvas fill the whole screen */
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js';
+
+    // ==========================================
+    // STEP 1: Core Setup (Scene, Camera, Renderer)
+    // ==========================================
+    
+    // 1. Create the Scene (the 3D world)
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB); // Sky blue background
+
+    // 2. Create the Camera (how we view the world)
+    // Parameters: Field of View, Aspect Ratio, Near clipping plane, Far clipping plane
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(10, 8, 15); // Move the camera back and up so we can see the scene
+
+    // 3. Create the Renderer (draws the scene onto the HTML canvas)
+    const renderer = new THREE.WebGLRenderer({ antialias: true }); // antialias makes edges smoother
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // ==========================================
+    // STEP 2: Lighting and Helpers
+    // ==========================================
+
+    // Ambient Light (soft light everywhere, prevents pure black shadows)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    // Directional Light (acts like the sun)
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    sunLight.position.set(10, 20, 10);
+    scene.add(sunLight);
+
+    // Grid Helper (shows a floor grid to help students understand coordinates)
+    const grid = new THREE.GridHelper(20, 20, 0x444444, 0x888888);
+    scene.add(grid);
+
+
+    // ==========================================
+    // STEP 3: Reusable Object Builders
+    // ==========================================
+
+    // Function to build a House
+    function createHouse(houseColor) {
+        // We use a Group to hold multiple shapes (base, roof, door) together
+        const houseGroup = new THREE.Group();
+
+        // 1. Base of the house
+        const baseGeo = new THREE.BoxGeometry(2, 2, 2);
+        const baseMat = new THREE.MeshStandardMaterial({ color: houseColor });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = 1; // Shift up by half its height so it sits on the ground
+        
+        // 2. Roof
+        const roofGeo = new THREE.ConeGeometry(1.5, 1, 4); // 4 sides makes it a pyramid
+        const roofMat = new THREE.MeshStandardMaterial({ color: 0xA52A2A }); // Brown
+        const roof = new THREE.Mesh(roofGeo, roofMat);
+        roof.position.y = 2.5; // Place it on top of the base
+        roof.rotation.y = Math.PI / 4; // Rotate 45 degrees so corners align with the base
+
+        // 3. Door
+        const doorGeo = new THREE.BoxGeometry(0.8, 1.2, 0.1);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x654321 }); // Dark brown
+        const door = new THREE.Mesh(doorGeo, doorMat);
+        door.position.set(0, 0.6, 1.01); // Positioned slightly outward on the Z axis
+
+        // Add all parts to the group
+        houseGroup.add(base, roof, door);
+
+        return houseGroup;
+    }
+
+    // Function to build a Tree
+    function createTree() {
+        const treeGroup = new THREE.Group();
+
+        // 1. Trunk
+        const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3728 });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 0.75; 
+        
+        // 2. Leaves
+        const leavesGeo = new THREE.ConeGeometry(1.2, 3, 8);
+        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2d5a27 });
+        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+        leaves.position.y = 2.25; 
+        
+        treeGroup.add(trunk, leaves);
+        
+        return treeGroup;
+    }
+
+
+    // ==========================================
+    // STEP 4: Build the Environment
+    // ==========================================
+
+    // Create House 1 (Grey)
+    const house1 = createHouse(0xdddddd);
+    house1.position.set(0, 0, 0); // Center of the world
+    scene.add(house1);
+
+    // Create House 2 (Blue)
+    const house2 = createHouse(0x4488ff);
+    house2.position.set(-4, 0, 4); 
+    house2.rotation.y = Math.PI / 3; // Rotate it a bit to look natural
+    scene.add(house2);
+
+    // Create a few trees
+    const tree1 = createTree();
+    tree1.position.set(4, 0, -3);
+    scene.add(tree1);
+
+    const tree2 = createTree();
+    tree2.position.set(-5, 0, -2);
+    tree2.scale.set(0.8, 0.8, 0.8); // Make this tree 80% of normal size
+    scene.add(tree2);
+
+    const tree3 = createTree();
+    tree3.position.set(5, 0, 4);
+    tree3.scale.set(1.2, 1.2, 1.2); // Make this tree 20% larger
+    scene.add(tree3);
+
+
+    // ==========================================
+    // STEP 5: Add Controls
+    // ==========================================
+    
+    // OrbitControls allow the user to drag the mouse to rotate the camera
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // Makes camera movement feel smoother
+
+
+    // ==========================================
+    // STEP 6: The Animation Loop
+    // ==========================================
+    
+    // This function runs 60 times per second to update the screen
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // Update controls (required for damping to work)
+        controls.update(); 
+        
+        // Render the scene
+        renderer.render(scene, camera);
+    }
+
+    // Handle window resizing so the canvas doesn't stretch weirdly
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start the animation loop
+    animate();
+
+</script>
+</body>
+</html>

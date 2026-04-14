@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello World: Teapot (Custom Shader)</title>
+    <style>body { margin: 0; }</style>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+      { "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      } }
+    </script>
+</head>
+<body>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { TeapotGeometry } from 'three/addons/geometries/TeapotGeometry.js';
+
+        // --- THE SHADERS (GLSL) ---
+
+        // Vertex Shader: Transforms 3D points to 2D screen space 
+        const _VS = `
+            varying vec3 vNormal;  // Output to Fragment Shader
+            varying vec3 vViewPos; // Output to Fragment Shader
+
+            void main() {
+                // Pass the normal to the next stage
+                vNormal = normalize(normalMatrix * normal);
+                
+                // Calculate position relative to camera
+                vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+                vViewPos = -viewPosition.xyz;
+
+                // Project to screen (Clip Space)
+                gl_Position = projectionMatrix * viewPosition; 
+            }
+        `;
+
+        // Fragment Shader: Calculates the color of each pixel 
+        const _FS = `
+            uniform vec3 uColor;
+            uniform vec3 uLightPos;
+            
+            varying vec3 vNormal; // Interpolated input from Vertex Shader
+            varying vec3 vViewPos;
+
+            void main() {
+                // 1. Math Setup
+                vec3 normal = normalize(vNormal);
+                vec3 lightDir = normalize(uLightPos - vViewPos);
+
+                // 2. Diffuse Lighting (Dot Product)
+                // If normal faces light, value is 1.0. If away, 0.0.
+                float diff = max(dot(normal, lightDir), 0.0);
+
+                // 3. Add Ambient light (0.2) to prevent pitch black shadows
+                vec3 finalColor = uColor * (diff + 0.2);
+
+                gl_FragColor = vec4(finalColor, 1.0);
+            }
+        `;
+
+        // --- STANDARD THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x333333);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(3, 3, 5);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        new OrbitControls(camera, renderer.domElement);
+
+        // --- OBJECT CREATION ---
+        const geometry = new TeapotGeometry(1, 10);
+
+        // ShaderMaterial: We pass our custom GLSL code here 
+        const material = new THREE.ShaderMaterial({
+            vertexShader: _VS,
+            fragmentShader: _FS,
+            uniforms: {
+                uColor: { value: new THREE.Color(0x00ff00) },
+                uLightPos: { value: new THREE.Vector3(5, 10, 7) } // Light position
+            }
+        });
+
+        const teapot = new THREE.Mesh(geometry, material);
+        scene.add(teapot);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
